@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
+      color: #172033;
+      max-width: 850px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    h1 { color: #155eef; }
+
+    .panel {
+      background: white;
+      padding: 20px;
+      margin: 18px 0;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #0001;
+    }
+
+    input, button {
+      padding: 11px;
+      margin: 5px 3px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #155eef;
+      color: white;
+      cursor: pointer;
+    }
+
+    .slot {
+      display: inline-block;
+      padding: 12px;
+      margin: 5px;
+      background: #d8f8df;
+      border-radius: 7px;
+    }
+
+    .occupied { background: #ffdada; }
+  </style>
+</head>
+<body>
+  <h1>🅿️ Smart Parking System</h1>
+  <p>Parking Allocation and Reservation Platform</p>
+
+  <div class="panel">
+    <h2>Book Parking</h2>
+    <input id="vehicle" placeholder="Vehicle number">
+    <button onclick="book()">Book Slot</button>
+    <p id="message"></p>
+  </div>
+
+  <div class="panel">
+    <h2>Parking Slots</h2>
+    <button onclick="refreshSlots()">Refresh Slots</button>
+    <div id="slots"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Release Parking</h2>
+    <input id="slotNumber" type="number" min="1" max="12"
+           placeholder="Slot number (1-12)">
+    <button onclick="releaseSlot()">Release Slot</button>
+  </div>
+
+  <script>
+    async function refreshSlots() {
+      try {
+        const response = await fetch('/api/slots');
+        const data = await response.json();
+        const area = document.getElementById('slots');
+        area.innerHTML = '';
+
+        for (const [number, vehicle] of Object.entries(data)) {
+          const item = document.createElement('div');
+          item.className = 'slot' + (vehicle ? ' occupied' : '');
+          item.textContent =
+            `Slot ${number}: ${vehicle || 'Available'}`;
+          area.appendChild(item);
+        }
+      } catch (error) {
+        document.getElementById('message').textContent =
+          'Server se connection nahi ho raha.';
+      }
+    }
+
+    async function book() {
+      const vehicle =
+        document.getElementById('vehicle').value.trim();
+
+      if (!vehicle) {
+        alert('Vehicle number enter karo.');
+        return;
+      }
+
+      const response = await fetch(
+        '/api/book?vehicle=' + encodeURIComponent(vehicle),
+        { method: 'POST' }
+      );
+
+      const result = await response.json();
+      document.getElementById('message').textContent =
+        JSON.stringify(result);
+
+      refreshSlots();
+    }
+
+    async function releaseSlot() {
+      const slot =
+        document.getElementById('slotNumber').value;
+
+      if (!slot || slot < 1 || slot > 12) {
+        alert('Slot number 1 se 12 ke beech enter karo.');
+        return;
+      }
+
+      const response = await fetch('/api/release/' + slot,
+                                   { method: 'POST' });
+
+      const result = await response.json();
+      document.getElementById('message').textContent =
+        JSON.stringify(result);
+
+      refreshSlots();
+    }
+
+    refreshSlots();
+  </script>
+</body>
+</html>
